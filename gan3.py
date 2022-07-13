@@ -3,11 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torch.autograd import Variable
 
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
 		super().__init__()
-		self.fc1 = nn.Linear(1280, 600)
+		self.fc1 = nn.Linear(1281, 600)
 		self.fc2 = nn.Linear(600, 300)
 		self.fc3 = nn.Linear(300, 100)
 		self.fc4 = nn.Linear(100, 20)
@@ -51,10 +52,10 @@ fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
 
 
-opt+disc = optim.Adam(disc.parameters(), lr=lr)
+opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
 criterion = nn.BCELoss()
-writer_fake = SummmaryWriter(f"runs/GAN_MIDI/fake")
+writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 step = 0
 
