@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,Dataset
 from torch.utils.tensorboard import SummaryWriter
 from torch.autograd import Variable
+import csv
+from pathlib import Path
 
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
@@ -59,6 +61,22 @@ writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 step = 0
 
-for epoch in range(num_epochs):
-	for batch_idx, (real, _) in enumerate(loader):
-		real = real.
+# for epoch in range(num_epochs):
+# 	for batch_idx, (real, _) in enumerate(loader):
+# 		real = real.
+
+class MidiDataset(Dataset):
+	def __init__(self,dir,batch_size):
+		self.dir = dir
+		self.batch_size = batch_size
+		self.files = Path(self.dir).glob("**/*.csv")
+	def __len__(self):
+		return len(list(self.files))
+	def __getitem__(self,index):
+		with open(str(self.files[index]),"r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=","):
+			for line in reader:
+				for cell in line:
+					messages.append(int(cell))
+		return messages
