@@ -30,7 +30,6 @@ class Discriminator(nn.Module):
 		x = F.dropout(x, 0.3)
 		return nn.Sigmoid(self.fc5(x))
 
-#midi dimension = 1281
 
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
@@ -77,7 +76,7 @@ class MidiDataset(Dataset):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 lr = 3e-4
 z_dim = 64 # 128, 256, or smaller
-midi_dim = 256 * 5
+midi_dim = 256 * 5 + 1
 batch_size = 32
 num_epochs = 50
 
@@ -85,9 +84,10 @@ D = Discriminator(midi_dim).to(device)
 G = Generator(z_dim, midi_dim).to(device)
 fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
-midi_data = MidiDataset(DIR_TO_CSVS)
-training_loader = DataLoader(midi_data,batch_size=64,shuffle=True)
-test_dataloader = DataLoader(midi_data, batch_size=64, shuffle=True)
+real_data = MidiDataset(fr"{DIR_TO_CSVS}\musical")
+fake_data = MidiDataset(fr"{DIR_TO_CSVS}\nonmusical")
+real_loader = DataLoader(real_data,batch_size=batch_size,shuffle=True)
+fake_loader = DataLoader(fake_data, batch_size=batch_size, shuffle=True)
 
 opt_disc = optim.Adam(D.parameters(), lr=lr)
 opt_gen = optim.Adam(G.parameters(), lr=lr)
@@ -95,46 +95,33 @@ criterion = nn.BCELoss()
 writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 
-class MidiDataset(Dataset):
-	def __init__(self,dir):
-		self.dir = dir
-		self.files = list(Path(self.dir).glob("**/*.csv"))
+G_optimizer = optim.Adam(G.parameters(), lr = lr)
+D_optimizer = optim.Adam(D.parameters(), lr = lr)
 
-	def __len__(self):
-		return len((self.files))
-
-	def __getitem__(self,index):
-		file = self.files[index]
-		container = str(file.parent).split("\\")[-1]
-		label = 1 if container == "musical" else 0
-		with open(str(file),"r") as csv_file:
-			messages = []
-			reader = csv.reader(csv_file,delimiter=",")
-			for line in reader:
-				for cell in line:
-					messages.append(int(cell))
-		return messages,label
 
 def D_train(x):
-	D.zero_grad()
-
-	#get the real data to do the yeah 
+	D.zero_grad()	
+	x_real, y_real = x.view(-1,midi_dim), torch.ones(batch_size,1)
+	x_real, y_real = Variable(x_real.to(device)), Variable(y_real.to(device))
 
 	D_output = D(x_real)
 	D_real_loss = criterion(D_output, y_real) #y_real should just be all 1s
 	D_real_score = D_output
+	#what does this do?
 
-	#get the fake data to do the yeah
+	z = Variable(torch.randn(batch_size, z_dim).to(device))
+	x_fake, y_fake = G(z), Variable(torch.zeros(batch_size, 1).to(device))
+	#this seems to be creating fake data from the generator, which really should be nonmusical fake data, right?
 
 	D_output = D(x_fake)
+	#what is the function being called on D? also ew globals
 	D_fake_loss = criterion(D_output, y_fake) #y_fake should just be all 0s
 	D_fake_score = D_output
-
+	#what is the fake score
 	D_loss = D_real_loss + D_fake_loss
 	D_loss.backward()
 	D_optimizer.step()
-
-	return D_Loss.data.item()
+	return D_loss.data.item()
 
 def G_train(x):
 	G.zero_grad()
