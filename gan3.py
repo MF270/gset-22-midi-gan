@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import troch.nn.function as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -14,11 +15,11 @@ class Discriminator(nn.Module):
 		self.fc5 = nn.Linear(20, 1)
 
 	def forward(self, x):
-		x = nn.LeakyReLU(self.fc1(x), 0.2)
-		x = nn.LeakyReLU(self.fc2(x), 0.2)
-		x = nn.LeakyReLU(self.fc3(x), 0.2)
-		x = nn.LeakyReLU(self.fc4(x), 0.2)
-		x = nn.LeakyReLU(self.fc5(x), 0.2)
+		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.LeakyReLU(self.fc5(x), 0.2)
 		x = nn.Sigmoid()
 		return self.disc(x)
 
@@ -27,14 +28,23 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
-		self.gen = nn.Sequential(
-			nn.Linear(z_dim, 256),
-			nn.LeakyReLU(0.1),
-			nn.Linear(256, m_dim), #1280, 256 x 5
-			nn.Tanh(),
-		)
+		self.fc1 = nn.Linear(1,20)
+		self.fc2 = nn.Linear(20, 100)
+		self.fc3 = nn.Linear(100, 300)
+		self.fc4 = nn.Linear(300, 600)
+		self.fc5 = nn.Linear(600, 1281)
+		
 
 	def forward(self, x):
+		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = nn.sigmoid(self.fc5(x))
 		return self.gen(x)
 
 #hyperparameters
