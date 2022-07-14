@@ -28,7 +28,7 @@ class Discriminator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
-		return nn.Sigmoid(self.fc5(x))
+		return F.sigmoid(self.fc5(x))
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
@@ -48,7 +48,7 @@ class Generator(nn.Module):
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		#not sure if should use sigmoid, can use tanh or softmax
-		return nn.sigmoid(self.fc5(x))
+		return F.sigmoid(self.fc5(x))
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -103,7 +103,7 @@ def D_train(x):
 	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
 
 	D_output = D(x_real)
-	D_real_loss = criterion(D_output, y_real) #y_real should just be all 1s
+	D_real_loss = criterion(D_output, y_real)
 	D_real_score = D_output
 	#what does this do?
 
@@ -137,8 +137,9 @@ def pretrain_d(real,fake,epochs):
 	for epoch in range(1,epochs+1):
 		real_data, _ = next(iter(real))
 		fake_data, _ = next(iter(fake))
-		D.train(real_data)
-		D.train(fake_data)
+		print(f"pre epoch {epoch}")
+		D_train(real_data)
+		D_train(fake_data)
 
 disc_extra_epochs = 20
 
