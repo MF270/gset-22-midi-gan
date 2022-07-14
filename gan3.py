@@ -82,7 +82,7 @@ batch_size = 32
 num_epochs = 50
 
 D = Discriminator(midi_dim).to(device)
-gen = Generator(z_dim, midi_dim).to(device)
+G = Generator(z_dim, midi_dim).to(device)
 fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
 midi_data = MidiDataset(DIR_TO_CSVS)
@@ -90,11 +90,10 @@ training_loader = DataLoader(midi_data,batch_size=64,shuffle=True)
 test_dataloader = DataLoader(midi_data, batch_size=64, shuffle=True)
 
 opt_disc = optim.Adam(D.parameters(), lr=lr)
-opt_gen = optim.Adam(gen.parameters(), lr=lr)
+opt_gen = optim.Adam(G.parameters(), lr=lr)
 criterion = nn.BCELoss()
 writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
-
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
