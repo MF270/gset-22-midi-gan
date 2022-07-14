@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader,Dataset
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from torch.autograd import Variable
 import csv
@@ -19,11 +20,16 @@ class Discriminator(nn.Module):
 		self.fc5 = nn.Linear(20, 1)
 
 	def forward(self, x):
-		x = nn.LeakyReLU(self.fc1(x), 0.2)
-		x = nn.LeakyReLU(self.fc2(x), 0.2)
-		x = nn.LeakyReLU(self.fc3(x), 0.2)
-		x = nn.LeakyReLU(self.fc4(x), 0.2)
-		x = nn.LeakyReLU(self.fc5(x), 0.2)
+		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc5(x), 0.2)
+		x = F.dropout(x, 0.3)
 		x = nn.Sigmoid()
 		return self.disc(x)
 
@@ -32,13 +38,22 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
-		self.gen = nn.Sequential(
-			nn.Linear(z_dim, 256),
-			nn.LeakyReLU(0.1),
-			nn.Linear(256, m_dim), #1280, 256 x 5
-			nn.Tanh(),
-		)
+		self.fc1 = nn.Linear(1,20)
+		self.fc2 = nn.Linear(20, 100)
+		self.fc3 = nn.Linear(100, 300)
+		self.fc4 = nn.Linear(300, 600)
+		self.fc5 = nn.Linear(600, 1281)
+		
 	def forward(self, x):
+		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.dropout(x, 0.3)
+		x = nn.sigmoid(self.fc5(x)) #not sure if should use sigmoid, can use tanh or softmax
 		return self.gen(x)
 
 class MidiDataset(Dataset):
@@ -88,4 +103,56 @@ step = 0
 # 	for batch_idx, (real, _) in enumerate(loader):
 # 		real = real.
 
+class MidiDataset(Dataset):
+	def __init__(self,dir):
+		self.dir = dir
+		self.files = list(Path(self.dir).glob("**/*.csv"))
 
+	def __len__(self):
+		return len((self.files))
+
+	def __getitem__(self,index):
+		file = self.files[index]
+		container = str(file.parent).split("\\")[-1]
+		label = 1 if container == "musical" else 0
+		with open(str(file),"r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=",")
+			for line in reader:
+				for cell in line:
+					messages.append(int(cell))
+		return messages,label
+def D_train(x):
+	D.zero_grad()
+
+	#get the real data to do the yeah 
+
+	D_output = D(x_real)
+	D_real_loss = criterion(D_output, y_real) #y_real should just be all 1s
+	D_real_score = D_output
+
+	#get the fake data to do the yeah
+
+	D_output = D(x_fake)
+	D_fake_loss = criterion(D_output, y_fake) #y_fake should just be all 0s
+	D_fake_score = D_output
+
+	D_loss = D_real_loss + D_fake_loss
+	D_loss.backward()
+	D_optimizer.step()
+
+	return D_Loss.data.item()
+
+def G_train(x):
+	G.zero_grad()
+
+	#idk how u get the stuff
+
+	G_output = G(z)
+	D_output = D(G_output)
+	G_loss = criterion(D_output, y)
+
+	G_loss.backward()
+	G_optimizer.step()
+
+	return G_loss.data.item()
