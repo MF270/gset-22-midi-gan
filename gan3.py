@@ -28,10 +28,7 @@ class Discriminator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = F.LeakyReLU(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc5(x), 0.2)
-		x = F.dropout(x, 0.3)
-		x = nn.Sigmoid()
-		return self.disc(x)
+		return nn.Sigmoid(self.fc5(x))
 
 #midi dimension = 1281
 
@@ -53,8 +50,8 @@ class Generator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = F.LeakyReLU(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = nn.sigmoid(self.fc5(x)) #not sure if should use sigmoid, can use tanh or softmax
-		return self.gen(x)
+		#not sure if should use sigmoid, can use tanh or softmax
+		return nn.sigmoid(self.fc5(x))
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -84,7 +81,7 @@ midi_dim = 256 * 5
 batch_size = 32
 num_epochs = 50
 
-disc = Discriminator(midi_dim).to(device)
+D = Discriminator(midi_dim).to(device)
 gen = Generator(z_dim, midi_dim).to(device)
 fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
@@ -92,12 +89,11 @@ midi_data = MidiDataset(DIR_TO_CSVS)
 training_loader = DataLoader(midi_data,batch_size=64,shuffle=True)
 test_dataloader = DataLoader(midi_data, batch_size=64, shuffle=True)
 
-opt_disc = optim.Adam(disc.parameters(), lr=lr)
+opt_disc = optim.Adam(D.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
 criterion = nn.BCELoss()
 writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
-step = 0
 
 
 class MidiDataset(Dataset):
@@ -155,6 +151,3 @@ def G_train(x):
 
 	return G_loss.data.item()
 
-# for epoch in range(num_epochs):
-# 	for batch_idx, (real, _) in enumerate(loader):
-# 		real = real.
