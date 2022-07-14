@@ -28,15 +28,15 @@ class Discriminator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
-		return F.sigmoid(self.fc5(x))
+		return torch.sigmoid(self.fc5(x))
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
-		self.fc1 = nn.Linear(1,20)
+		self.fc1 = nn.Linear(z_dim,20)
 		self.fc2 = nn.Linear(20, 100)
 		self.fc3 = nn.Linear(100, 300)
 		self.fc4 = nn.Linear(300, 600)
-		self.fc5 = nn.Linear(600, 1281)
+		self.fc5 = nn.Linear(600, m_dim)
 		
 	def forward(self, x):
 		x = F.leaky_relu(self.fc1(x), 0.2)
@@ -48,7 +48,7 @@ class Generator(nn.Module):
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		#not sure if should use sigmoid, can use tanh or softmax
-		return F.sigmoid(self.fc5(x))
+		return torch.sigmoid(self.fc5(x))
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -75,7 +75,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 lr = 3e-4
 z_dim = 64 # 128, 256, or smaller
 midi_dim = 256 * 5 + 1
-batch_size = 32
+batch_size = 64
 num_epochs = 100
 
 D = Discriminator(midi_dim).to(device)
@@ -143,7 +143,8 @@ def pretrain_d(real,fake,epochs):
 
 disc_extra_epochs = 20
 
-pretrain_d(real_loader,fake_loader,disc_extra_epochs)		
+pretrain_d(real_loader,fake_loader,disc_extra_epochs)
+print("training full net")
 for epoch in range(1, num_epochs+1):
 	G_losses, D_losses = [], []
 	for (x, _) in (real_loader):
