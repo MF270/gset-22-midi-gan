@@ -7,6 +7,8 @@ from torch.autograd import Variable
 import csv
 from pathlib import Path
 
+
+DIR_TO_CSVS = r"C:\PythonPrograms\gset\midi\csv"
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
 		super().__init__()
@@ -36,9 +38,28 @@ class Generator(nn.Module):
 			nn.Linear(256, m_dim), #1280, 256 x 5
 			nn.Tanh(),
 		)
-
 	def forward(self, x):
 		return self.gen(x)
+
+class MidiDataset(Dataset):
+	def __init__(self,dir):
+		self.dir = dir
+		self.files = list(Path(self.dir).glob("**/*.csv"))
+
+	def __len__(self):
+		return len((self.files))
+
+	def __getitem__(self,index):
+		file = self.files[index]
+		container = str(file.parent).split("\\")[-1]
+		label = 1 if container == "musical" else 0
+		with open(str(file),"r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=",")
+			for line in reader:
+				for cell in line:
+					messages.append(int(cell))
+		return messages,label
 
 #hyperparameters
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -52,7 +73,9 @@ disc = Discriminator(midi_dim).to(device)
 gen = Generator(z_dim, midi_dim).to(device)
 fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
-
+midi_data = MidiDataset(DIR_TO_CSVS)
+training_loader = DataLoader(midi_data,batch_size=64,shuffle=True)
+test_dataloader = DataLoader(midi_data, batch_size=64, shuffle=True)
 
 opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
@@ -65,18 +88,4 @@ step = 0
 # 	for batch_idx, (real, _) in enumerate(loader):
 # 		real = real.
 
-class MidiDataset(Dataset):
-	def __init__(self,dir,batch_size):
-		self.dir = dir
-		self.batch_size = batch_size
-		self.files = Path(self.dir).glob("**/*.csv")
-	def __len__(self):
-		return len(list(self.files))
-	def __getitem__(self,index):
-		with open(str(self.files[index]),"r") as csv_file:
-			messages = []
-			reader = csv.reader(csv_file,delimiter=","):
-			for line in reader:
-				for cell in line:
-					messages.append(int(cell))
-		return messages
+
