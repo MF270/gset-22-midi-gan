@@ -44,7 +44,7 @@ class Generator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = F.LeakyReLU(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = nn.sigmoid(self.fc5(x))
+		x = nn.sigmoid(self.fc5(x)) #not sure if should use sigmoid, can use tanh or softmax
 		return self.gen(x)
 
 #hyperparameters
