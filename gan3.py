@@ -99,9 +99,6 @@ writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 step = 0
 
-# for epoch in range(num_epochs):
-# 	for batch_idx, (real, _) in enumerate(loader):
-# 		real = real.
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -122,6 +119,7 @@ class MidiDataset(Dataset):
 				for cell in line:
 					messages.append(int(cell))
 		return messages,label
+
 def D_train(x):
 	D.zero_grad()
 
@@ -156,3 +154,7 @@ def G_train(x):
 	G_optimizer.step()
 
 	return G_loss.data.item()
+
+# for epoch in range(num_epochs):
+# 	for batch_idx, (real, _) in enumerate(loader):
+# 		real = real.
