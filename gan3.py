@@ -78,7 +78,7 @@ lr = 3e-4
 z_dim = 64 # 128, 256, or smaller
 midi_dim = 256 * 5 + 1
 batch_size = 32
-num_epochs = 50
+num_epochs = 100
 
 D = Discriminator(midi_dim).to(device)
 G = Generator(z_dim, midi_dim).to(device)
@@ -124,27 +124,30 @@ def D_train(x):
 	return D_loss.data.item()
 
 def G_train(x):
-	G.zero_grad()
+    G.zero_grad()
+    z = Variable(torch.randn(batch_size, z_dim).to(device))
+    y = Variable(torch.ones(batch_size, 1).to(device))
+    G_output = G(z)
+    D_output = D(G_output)
+    G_loss = criterion(D_output, y)
+    # gradient backprop & optimize ONLY G's parameters
+    G_loss.backward()
+    G_optimizer.step()
+    return G_loss.data.item()
 
-	#idk how u get the stuff
+def pretrain_d(real,fake,epochs):
+	for epoch in range(1,epochs+1):
+		real_data, _ = next(iter(real))
+		fake_data, _ = next(iter(fake))
+		D.train(real_data)
+		D.train(fake_data)
 
-	G_output = G(z)
-	D_output = D(G_output)
-	G_loss = criterion(D_output, y)
+disc_extra_epochs = 20
 
-	G_loss.backward()
-	G_optimizer.step()
-
-	return G_loss.data.item()
-
-#will this work for training??
-#what about training disc on nonmusicals? certain num epochs on that first?
+pretrain_d(real_loader,fake_loader)		
 for epoch in range(1, num_epochs+1):
-	D_losses, G_losses = [], []
-	#not sure which dataset i'm supposed to train on here, wtf?
-	for (x, _) in (train_loader):
+	G_losses, D_losses = [], []
+	for (x, _) in (real_loader):
 		D_losses.append(D_train(x))
 		G_losses.append(G_train(x))
-
-print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
-		(epoch), n_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
+	print(f'[{epoch}/{num_epochs}]: loss_d: {torch.mean(torch.FloatTensor(D_losses))}, loss_g: {torch.mean(torch.FloatTensor(G_losses))}')
