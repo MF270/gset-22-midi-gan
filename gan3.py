@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader,Dataset
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from torch.autograd import Variable
+from torch import Tensor
 import csv
 from pathlib import Path
 
@@ -20,17 +20,15 @@ class Discriminator(nn.Module):
 		self.fc5 = nn.Linear(20, 1)
 
 	def forward(self, x):
-		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.leaky_relu(self.fc1(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.leaky_relu(self.fc2(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.leaky_relu(self.fc3(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		return nn.Sigmoid(self.fc5(x))
-
-
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
@@ -41,13 +39,13 @@ class Generator(nn.Module):
 		self.fc5 = nn.Linear(600, 1281)
 		
 	def forward(self, x):
-		x = F.LeakyReLU(self.fc1(x), 0.2)
+		x = F.leaky_relu(self.fc1(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc2(x), 0.2)
+		x = F.leaky_relu(self.fc2(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc3(x), 0.2)
+		x = F.leaky_relu(self.fc3(x), 0.2)
 		x = F.dropout(x, 0.3)
-		x = F.LeakyReLU(self.fc4(x), 0.2)
+		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		#not sure if should use sigmoid, can use tanh or softmax
 		return nn.sigmoid(self.fc5(x))
@@ -70,7 +68,7 @@ class MidiDataset(Dataset):
 			for line in reader:
 				for cell in line:
 					messages.append(int(cell))
-		return messages,label
+		return Tensor(messages),label
 
 #hyperparameters
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -102,15 +100,15 @@ D_optimizer = optim.Adam(D.parameters(), lr = lr)
 def D_train(x):
 	D.zero_grad()	
 	x_real, y_real = x.view(-1,midi_dim), torch.ones(batch_size,1)
-	x_real, y_real = Variable(x_real.to(device)), Variable(y_real.to(device))
+	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
 
 	D_output = D(x_real)
 	D_real_loss = criterion(D_output, y_real) #y_real should just be all 1s
 	D_real_score = D_output
 	#what does this do?
 
-	z = Variable(torch.randn(batch_size, z_dim).to(device))
-	x_fake, y_fake = G(z), Variable(torch.zeros(batch_size, 1).to(device))
+	z = Tensor(torch.randn(batch_size, z_dim).to(device))
+	x_fake, y_fake = G(z), Tensor(torch.zeros(batch_size, 1).to(device))
 	#this seems to be creating fake data from the generator, which really should be nonmusical fake data, right?
 
 	D_output = D(x_fake)
@@ -125,8 +123,8 @@ def D_train(x):
 
 def G_train(x):
     G.zero_grad()
-    z = Variable(torch.randn(batch_size, z_dim).to(device))
-    y = Variable(torch.ones(batch_size, 1).to(device))
+    z = Tensor(torch.randn(batch_size, z_dim).to(device))
+    y = Tensor(torch.ones(batch_size, 1).to(device))
     G_output = G(z)
     D_output = D(G_output)
     G_loss = criterion(D_output, y)
@@ -144,7 +142,7 @@ def pretrain_d(real,fake,epochs):
 
 disc_extra_epochs = 20
 
-pretrain_d(real_loader,fake_loader)		
+pretrain_d(real_loader,fake_loader,disc_extra_epochs)		
 for epoch in range(1, num_epochs+1):
 	G_losses, D_losses = [], []
 	for (x, _) in (real_loader):
