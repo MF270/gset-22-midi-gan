@@ -137,3 +137,14 @@ def G_train(x):
 
 	return G_loss.data.item()
 
+#will this work for training??
+#what about training disc on nonmusicals? certain num epochs on that first?
+for epoch in range(1, num_epochs+1):
+	D_losses, G_losses = [], []
+	#not sure which dataset i'm supposed to train on here, wtf?
+	for (x, _) in (train_loader):
+		D_losses.append(D_train(x))
+		G_losses.append(G_train(x))
+
+print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
+		(epoch), n_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
