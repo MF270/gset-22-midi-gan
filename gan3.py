@@ -1,14 +1,21 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+<<<<<<< milo
+from torch.utils.data import DataLoader,Dataset
+=======
 import troch.nn.function as F
 from torch.utils.data import DataLoader
+>>>>>>> main
 from torch.utils.tensorboard import SummaryWriter
+from torch.autograd import Variable
+import csv
+from pathlib import Path
 
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
 		super().__init__()
-		self.fc1 = nn.Linear(1280, 600)
+		self.fc1 = nn.Linear(1281, 600)
 		self.fc2 = nn.Linear(600, 300)
 		self.fc3 = nn.Linear(300, 100)
 		self.fc4 = nn.Linear(100, 20)
@@ -67,13 +74,34 @@ fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 #build network
 #WTF!!!! ? ? 
 
-opt+disc = optim.Adam(disc.parameters(), lr=lr)
+opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
 criterion = nn.BCELoss()
-writer_fake = SummmaryWriter(f"runs/GAN_MIDI/fake")
+writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 step = 0
 
+<<<<<<< milo
+# for epoch in range(num_epochs):
+# 	for batch_idx, (real, _) in enumerate(loader):
+# 		real = real.
+
+class MidiDataset(Dataset):
+	def __init__(self,dir,batch_size):
+		self.dir = dir
+		self.batch_size = batch_size
+		self.files = Path(self.dir).glob("**/*.csv")
+	def __len__(self):
+		return len(list(self.files))
+	def __getitem__(self,index):
+		with open(str(self.files[index]),"r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=","):
+			for line in reader:
+				for cell in line:
+					messages.append(int(cell))
+		return messages
+=======
 def D_train(x):
 	D.zero_grad()
 
@@ -108,3 +136,4 @@ def G_train(x):
 	G_optimizer.step()
 
 	return G_loss.data.item()
+>>>>>>> main
