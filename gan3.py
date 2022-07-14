@@ -1,17 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-<<<<<<< milo
 from torch.utils.data import DataLoader,Dataset
-=======
-import troch.nn.function as F
-from torch.utils.data import DataLoader
->>>>>>> main
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from torch.autograd import Variable
 import csv
 from pathlib import Path
 
+
+DIR_TO_CSVS = r"C:\PythonPrograms\gset\midi\csv"
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
 		super().__init__()
@@ -46,7 +44,6 @@ class Generator(nn.Module):
 		self.fc4 = nn.Linear(300, 600)
 		self.fc5 = nn.Linear(600, 1281)
 		
-
 	def forward(self, x):
 		x = F.LeakyReLU(self.fc1(x), 0.2)
 		x = F.dropout(x, 0.3)
@@ -58,6 +55,26 @@ class Generator(nn.Module):
 		x = F.dropout(x, 0.3)
 		x = nn.sigmoid(self.fc5(x)) #not sure if should use sigmoid, can use tanh or softmax
 		return self.gen(x)
+
+class MidiDataset(Dataset):
+	def __init__(self,dir):
+		self.dir = dir
+		self.files = list(Path(self.dir).glob("**/*.csv"))
+
+	def __len__(self):
+		return len((self.files))
+
+	def __getitem__(self,index):
+		file = self.files[index]
+		container = str(file.parent).split("\\")[-1]
+		label = 1 if container == "musical" else 0
+		with open(str(file),"r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=",")
+			for line in reader:
+				for cell in line:
+					messages.append(int(cell))
+		return messages,label
 
 #hyperparameters
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -71,8 +88,9 @@ disc = Discriminator(midi_dim).to(device)
 gen = Generator(z_dim, midi_dim).to(device)
 fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
-#build network
-#WTF!!!! ? ? 
+midi_data = MidiDataset(DIR_TO_CSVS)
+training_loader = DataLoader(midi_data,batch_size=64,shuffle=True)
+test_dataloader = DataLoader(midi_data, batch_size=64, shuffle=True)
 
 opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
@@ -81,27 +99,29 @@ writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 step = 0
 
-<<<<<<< milo
 # for epoch in range(num_epochs):
 # 	for batch_idx, (real, _) in enumerate(loader):
 # 		real = real.
 
 class MidiDataset(Dataset):
-	def __init__(self,dir,batch_size):
+	def __init__(self,dir):
 		self.dir = dir
-		self.batch_size = batch_size
-		self.files = Path(self.dir).glob("**/*.csv")
+		self.files = list(Path(self.dir).glob("**/*.csv"))
+
 	def __len__(self):
-		return len(list(self.files))
+		return len((self.files))
+
 	def __getitem__(self,index):
-		with open(str(self.files[index]),"r") as csv_file:
+		file = self.files[index]
+		container = str(file.parent).split("\\")[-1]
+		label = 1 if container == "musical" else 0
+		with open(str(file),"r") as csv_file:
 			messages = []
-			reader = csv.reader(csv_file,delimiter=","):
+			reader = csv.reader(csv_file,delimiter=",")
 			for line in reader:
 				for cell in line:
 					messages.append(int(cell))
-		return messages
-=======
+		return messages,label
 def D_train(x):
 	D.zero_grad()
 
@@ -136,4 +156,3 @@ def G_train(x):
 	G_optimizer.step()
 
 	return G_loss.data.item()
->>>>>>> main
