@@ -48,7 +48,8 @@ class Generator(nn.Module):
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		#not sure if should use sigmoid, can use tanh or softmax
-		return torch.sigmoid(self.fc5(x))
+		x = torch.sigmoid(self.fc5(x))
+		return x
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -103,6 +104,7 @@ def D_train(x):
 	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
 
 	D_output = D(x_real)
+
 	D_real_loss = criterion(D_output, y_real)
 	D_real_score = D_output
 	#what does this do?
@@ -112,10 +114,10 @@ def D_train(x):
 	#this seems to be creating fake data from the generator, which really should be nonmusical fake data, right?
 
 	D_output = D(x_fake)
-	#what is the function being called on D? also ew globals
+
 	D_fake_loss = criterion(D_output, y_fake) #y_fake should just be all 0s
 	D_fake_score = D_output
-	#what is the fake score
+
 	D_loss = D_real_loss + D_fake_loss
 	D_loss.backward()
 	D_optimizer.step()
@@ -146,6 +148,11 @@ disc_extra_epochs = 20
 pretrain_d(real_loader,fake_loader,disc_extra_epochs)
 print("training full net")
 for epoch in range(1, num_epochs+1):
+	print(f"epoch {epoch}")
+	if epoch%5 == 0:
+		torch.save(G.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
+		torch.save(D.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
+
 	G_losses, D_losses = [], []
 	for (x, _) in (real_loader):
 		D_losses.append(D_train(x))
