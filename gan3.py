@@ -1,4 +1,3 @@
-from tkinter import W
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,9 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import Tensor
 import csv
 from pathlib import Path
-import midi_to_csv
-
-
+from math import log
 DIR_TO_CSVS = r"C:\PythonPrograms\gset\midi\csv"
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
@@ -51,8 +48,9 @@ class Generator(nn.Module):
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		#not sure if should use sigmoid, can use tanh or softmax
-		x = torch.sigmoid(self.fc5(x))
-		return x
+		return self.fc5(x)
+		# x = torch.sigmoid(self.fc5(x))
+		# return x
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
@@ -94,6 +92,7 @@ fake_loader = DataLoader(fake_data, batch_size=batch_size, shuffle=True,drop_las
 opt_disc = optim.Adam(D.parameters(), lr=lr)
 opt_gen = optim.Adam(G.parameters(), lr=lr)
 criterion = nn.BCELoss()
+gencriterion = nn.MSELoss()
 writer_fake = SummaryWriter(f"runs/GAN_MIDI/fake")
 writer_real = SummaryWriter(f"runs/GAN_MIDI/real")
 
@@ -130,14 +129,22 @@ def D_train(x):
 	# except:
 		# print("something is wrong")
 		# return torch.zeros(64,1)
-
+def invSig(x):
+	return -log((1-x)/x)
 def save_as_csv(t):
 	with open("fuckinghelpme.csv","w",newline="") as csv_file:
+		# t=invSig(t)
 		writer = csv.writer(csv_file)
-		writer.writerow(t[0][0])
+		writer.writerow([t[0][0].tolist()])
 		rest_of_list = t[0][1:]
 		out_list = [rest_of_list[i:i+5] for i in range(0, len(rest_of_list))]
-		writer.writerows(out_list)
+		for l in out_list:
+			if len(l) != 5:
+				continue
+			x = l.squeeze().tolist()
+			writer.writerow(x)
+		# out_list = [int((i.squeeze())) for i in out_list]
+		# writer.writerows(out_list)
 
 def G_train(n):
 	G.zero_grad()
@@ -145,8 +152,8 @@ def G_train(n):
 	y = Tensor(torch.ones(batch_size, 1).to(device))
 	G_output = G(z)
 	D_output = D(G_output)
-	G_loss = criterion(D_output, y)
-	if (n%5 == 0):
+	G_loss = gencriterion(D_output, y)
+	if (n%2 == 0):
 		save_as_csv(G_output)
 	G_loss.backward()
 	G_optimizer.step()
