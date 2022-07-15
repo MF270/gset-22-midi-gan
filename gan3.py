@@ -85,8 +85,8 @@ fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 
 real_data = MidiDataset(fr"{DIR_TO_CSVS}\musical")
 fake_data = MidiDataset(fr"{DIR_TO_CSVS}\nonmusical")
-real_loader = DataLoader(real_data,batch_size=batch_size,shuffle=True)
-fake_loader = DataLoader(fake_data, batch_size=batch_size, shuffle=True)
+real_loader = DataLoader(real_data,batch_size=batch_size,shuffle=True,drop_last=True)
+fake_loader = DataLoader(fake_data, batch_size=batch_size, shuffle=True,drop_last=True)
 
 opt_disc = optim.Adam(D.parameters(), lr=lr)
 opt_gen = optim.Adam(G.parameters(), lr=lr)
@@ -103,8 +103,13 @@ def D_train(x):
 	x_real, y_real = x.view(-1,midi_dim), torch.ones(batch_size,1)
 	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
 
+
 	D_output = D(x_real)
 
+	# print(D_output.size())
+	# print("Y_real: {}".format(y_real.size()))
+
+	# try:
 	D_real_loss = criterion(D_output, y_real)
 	D_real_score = D_output
 	#what does this do?
@@ -122,6 +127,9 @@ def D_train(x):
 	D_loss.backward()
 	D_optimizer.step()
 	return D_loss.data.item()
+	# except:
+		# print("something is wrong")
+		# return torch.zeros(64,1)
 
 def G_train(x):
     G.zero_grad()
@@ -157,4 +165,4 @@ for epoch in range(1, num_epochs+1):
 	for (x, _) in (real_loader):
 		D_losses.append(D_train(x))
 		G_losses.append(G_train(x))
-	print(f'[{epoch}/{num_epochs}]: loss_d: {torch.mean(torch.FloatTensor(D_losses))}, loss_g: {torch.mean(torch.FloatTensor(G_losses))}')
+	# print(f'[{epoch}/{num_epochs}]: loss_d: {torch.mean(Tensor(D_losses))}, loss_g: {torch.mean(Tensor(G_losses))}')
