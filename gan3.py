@@ -1,3 +1,4 @@
+from tkinter import W
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import Tensor
 import csv
 from pathlib import Path
+import midi_to_csv
 
 
 DIR_TO_CSVS = r"C:\PythonPrograms\gset\midi\csv"
@@ -29,12 +31,13 @@ class Discriminator(nn.Module):
 		x = F.leaky_relu(self.fc4(x), 0.2)
 		x = F.dropout(x, 0.3)
 		return torch.sigmoid(self.fc5(x))
+
 class Generator(nn.Module):
 	def __init__(self, z_dim, m_dim):
 		super().__init__()
-		self.fc1 = nn.Linear(z_dim,20)
-		self.fc2 = nn.Linear(20, 100)
-		self.fc3 = nn.Linear(100, 300)
+		self.fc1 = nn.Linear(z_dim,100)
+		self.fc2 = nn.Linear(100, 200)
+		self.fc3 = nn.Linear(200, 300)
 		self.fc4 = nn.Linear(300, 600)
 		self.fc5 = nn.Linear(600, m_dim)
 		
@@ -106,9 +109,6 @@ def D_train(x):
 
 	D_output = D(x_real)
 
-	# print(D_output.size())
-	# print("Y_real: {}".format(y_real.size()))
-
 	# try:
 	D_real_loss = criterion(D_output, y_real)
 	D_real_score = D_output
@@ -131,17 +131,26 @@ def D_train(x):
 		# print("something is wrong")
 		# return torch.zeros(64,1)
 
-def G_train(x):
-    G.zero_grad()
-    z = Tensor(torch.randn(batch_size, z_dim).to(device))
-    y = Tensor(torch.ones(batch_size, 1).to(device))
-    G_output = G(z)
-    D_output = D(G_output)
-    G_loss = criterion(D_output, y)
-    # gradient backprop & optimize ONLY G's parameters
-    G_loss.backward()
-    G_optimizer.step()
-    return G_loss.data.item()
+def save_as_csv(t):
+	with open("fuckinghelpme.csv","w",newline="") as csv_file:
+		writer = csv.writer(csv_file)
+		writer.writerow(t[0][0])
+		rest_of_list = t[0][1:]
+		out_list = [rest_of_list[i:i+5] for i in range(0, len(rest_of_list))]
+		writer.writerows(out_list)
+
+def G_train(n):
+	G.zero_grad()
+	z = Tensor(torch.randn(batch_size, z_dim).to(device))
+	y = Tensor(torch.ones(batch_size, 1).to(device))
+	G_output = G(z)
+	D_output = D(G_output)
+	G_loss = criterion(D_output, y)
+	if (n%5 == 0):
+		save_as_csv(G_output)
+	G_loss.backward()
+	G_optimizer.step()
+	return G_loss.data.item()
 
 def pretrain_d(real,fake,epochs):
 	for epoch in range(1,epochs+1):
@@ -159,10 +168,11 @@ for epoch in range(1, num_epochs+1):
 	print(f"epoch {epoch}")
 	if epoch%5 == 0:
 		torch.save(G.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
-		torch.save(D.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
+		torch.save(D.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\disc{epoch}.pt")
 
 	G_losses, D_losses = [], []
 	for (x, _) in (real_loader):
 		D_losses.append(D_train(x))
-		G_losses.append(G_train(x))
+		G_losses.append(G_train(epoch))
 	# print(f'[{epoch}/{num_epochs}]: loss_d: {torch.mean(Tensor(D_losses))}, loss_g: {torch.mean(Tensor(G_losses))}')
+
