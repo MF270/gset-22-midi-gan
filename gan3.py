@@ -8,7 +8,8 @@ from torch import Tensor
 import csv
 from pathlib import Path
 from math import log
-DIR_TO_CSVS = r"C:\PythonPrograms\gset\midi\csv"
+
+DIR_TO_CSVS = r"C:\Users\rck67\GSET\csv"
 class Discriminator(nn.Module):
 	def __init__(self, in_features):
 		super().__init__()
@@ -89,30 +90,21 @@ class MidiDataset(Dataset):
 					messages.append(int(cell))
 		return Tensor(messages),label
 
-
 def D_train(x):
 	D.zero_grad()	
 	x_real, y_real = x.view(-1,midi_dim), torch.ones(batch_size,1)
 	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
-
-
-	D_output = D(x_real)
-
 	# try:
-	D_real_loss = criterion(D_output, y_real)
-	D_real_score = D_output
+	D_real = D(x_real)
 	#what does this do?
 
 	z = Tensor(torch.randn(batch_size, z_dim).to(device))
 	x_fake, y_fake = G(z), Tensor(torch.zeros(batch_size, 1).to(device))
 	#this seems to be creating fake data from the generator, which really should be nonmusical fake data, right?
 
-	D_output = D(x_fake)
+	D_fake = D(x_fake)
 
-	D_fake_loss = criterion(D_output, y_fake) #y_fake should just be all 0s
-	D_fake_score = D_output
-
-	D_loss = D_real_loss + D_fake_loss
+	D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
 	D_loss.backward()
 	D_optimizer.step()
 	return D_loss.data.item()
@@ -147,7 +139,8 @@ def G_train(n):
 	y = Tensor(torch.ones(batch_size, 1).to(device))
 	G_output = G(z)
 	D_output = D(G_output)
-	G_loss = gencriterion(D_output, y)
+	D_fake = D(x_fake)
+	G_loss = -torch.mean(D_fake)
 	if (n%2 == 0):
 		save_as_csv(G_output)
 	G_loss.backward()
@@ -161,6 +154,37 @@ def pretrain_d(real,fake,epochs):
 		print(f"pre epoch {epoch}")
 		D_train(real_data)
 		D_train(fake_data)
+
+def train(x,n):
+	D.zero_grad()	
+	x_real, y_real = x.view(-1,midi_dim), torch.ones(batch_size,1)
+	x_real, y_real = Tensor(x_real.to(device)), Tensor(y_real.to(device))
+	# try:
+	D_real = D(x_real)
+	#what does this do?
+
+	z = Tensor(torch.randn(batch_size, z_dim).to(device)).detach()
+	x_fake, y_fake = G(z), Tensor(torch.zeros(batch_size, 1).to(device))
+	#this seems to be creating fake data from the generator, which really should be nonmusical fake data, right?
+
+	D_fake = D(x_fake)
+
+	D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
+	D_loss.backward()
+	D_optimizer.step()
+
+	G.zero_grad()
+	z = Tensor(torch.randn(batch_size, z_dim).to(device))
+	y = Tensor(torch.ones(batch_size, 1).to(device))
+	G_output = G(z)
+	D_output = D(G_output)
+	G_loss = -torch.mean(D_fake)
+	if (n%2 == 0):
+		save_as_csv(G_output)
+	G_loss.backward()
+	G_optimizer.step()
+	return D_loss.data.item(), G_loss.data.item()
+
 
 if __name__=="__main__":
 	#hyperparameters
@@ -190,7 +214,6 @@ if __name__=="__main__":
 	G_optimizer = optim.Adam(G.parameters(), lr = lr)
 	D_optimizer = optim.Adam(D.parameters(), lr = lr)
 
-
 	disc_extra_epochs = 0
 
 	pretrain_d(real_loader,fake_loader,disc_extra_epochs)
@@ -198,12 +221,12 @@ if __name__=="__main__":
 	for epoch in range(1, num_epochs+1):
 		print(f"epoch {epoch}")
 		if epoch%2 == 0:
-			torch.save(G.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
-			torch.save(D.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\disc{epoch}.pt")
+			torch.save(G.state_dict(), rf"C:\Users\rck67\GSET\models\gen{epoch}.pt")
+			torch.save(D.state_dict(), rf"C:\Users\rck67\GSET\models\disc{epoch}.pt")
 
 		G_losses, D_losses = [], []
 		for (x, _) in (real_loader):
-			D_losses.append(D_train(x))
-			G_losses.append(G_train(epoch))
+			dloss, gloss = train(x,epoch)
+			D_losses.append(dloss)
+			G_losses.append(gloss)
 		# print(f'[{epoch}/{num_epochs}]: loss_d: {torch.mean(Tensor(D_losses))}, loss_g: {torch.mean(Tensor(G_losses))}')
-
