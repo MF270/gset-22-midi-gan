@@ -64,7 +64,8 @@ class Generator(nn.Module):
 		x = F.dropout(x, 0.3)
 
 		#not sure if should use sigmoid, can use tanh or softmax
-		return torch.sigmoid(self.fc10(x))
+		return (self.fc10(x))
+		# return torch.sigmoid(self.fc10(x))
 		# x = torch.sigmoid(self.fc5(x))
 		# return x
 
@@ -118,11 +119,16 @@ def D_train(x):
 def inv_sig(x):
 	if x==0:
 		x=1e-4
-	return -log((1-x)/x)
+	if x == 1:
+		return 64
+	try:
+		return -log((1-x)/x)
+	except:
+		print(x)
 def save_as_csv(t):
 	with open("fuckinghelpme.csv","w",newline="") as csv_file:
-		with torch.no_grad():
-			t.detach().apply_(inv_sig)
+		# with torch.no_grad():
+		# 	t.detach().apply_(inv_sig)
 		writer = csv.writer(csv_file)
 		writer.writerow([t[0][0].tolist()])
 		rest_of_list = t[0][1:]
@@ -141,7 +147,7 @@ def G_train(n):
 	y = Tensor(torch.ones(batch_size, 1).to(device))
 	G_output = G(z)
 	D_output = D(G_output)
-	G_loss = criterion(D_output, y)
+	G_loss = gencriterion(D_output, y)
 	if (n%2 == 0):
 		save_as_csv(G_output)
 	G_loss.backward()
@@ -191,7 +197,7 @@ if __name__=="__main__":
 	print("training full net")
 	for epoch in range(1, num_epochs+1):
 		print(f"epoch {epoch}")
-		if epoch%5 == 0:
+		if epoch%2 == 0:
 			torch.save(G.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\gen{epoch}.pt")
 			torch.save(D.state_dict(), rf"C:\PythonPrograms\gset\midi-gan\models\disc{epoch}.pt")
 
