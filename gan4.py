@@ -1,18 +1,18 @@
+from gan3 import Generator,Discriminator
+from torch import Tensor
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import csv
+with open(r"C:\PythonPrograms\gset\midi\csv\musical\Ain't Nuthin' but a G Thang\19.csv","r") as csv_file:
+			messages = []
+			reader = csv.reader(csv_file,delimiter=",")
+			for line in reader:
+				for cell in line:
+					messages.append(float(cell))
+			t =Tensor(messages)
 
-class Generator(nn.Module):
-	def __init__(self, num_feats, hidden_units=256, drop_prob=0.6, use_cuda=False):
-		super(Generator, self).__init__()
-
-
-		# parameters
-		self.hidden_dim = hidden_units
-		self.use_cuda = use_cuda
-		self.num_feats = num_feats
-
-		self.fc_layer1 = nn.Linear(in_features=(num_feats*2), out_features=hidden_units)
-		self.lstm_cell1 = nn.LSTMCell(input_size=hidden_units, hidden_size=hidden_units)
-		self.dropout = nn.Dropout(p=drop_prob)
-		self.lstm_cell2 = nn.LSTMCell(input_size=hidden_units, hidden_size=hidden_units)
+with torch.no_grad():
+	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc100.pt")
+	model = Discriminator(1281)
+	model.load_state_dict(sd)
+	model.eval()
+	print(int(model(t)))
