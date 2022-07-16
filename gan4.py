@@ -11,7 +11,7 @@ with open(r"C:\PythonPrograms\fuckinghelpme.csv","r") as csv_file:
 			t =Tensor(messages)
 
 with torch.no_grad():
-	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc40.pt")
+	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc30.pt")
 	model = Discriminator(1281)
 	model.load_state_dict(sd)
 	model.eval()
@@ -19,12 +19,18 @@ with torch.no_grad():
 	# print(t.size())
 	# print(float(model(t)))
 with torch.no_grad():
-	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc60.pt")
+	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc35.pt")
 	model2 = Discriminator(1281)
 	model2.load_state_dict(sd)
 	model2.eval()
 	print(model.state_dict())
 	# print(t.size())
 	# print(float(model(t)))
-
-print(model2.state_dict()-model.state_dict())
+with torch.no_grad():
+	sd = torch.load("C:\PythonPrograms\gset\midi-gan\models\disc40.pt")
+	model = Discriminator(1281)
+	model.load_state_dict(sd)
+	model.eval()
+	print(model.state_dict())
+	# print(t.size())
+	# print(float(model(t)))
