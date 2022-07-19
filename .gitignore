@@ -139,3 +139,5 @@ justdisc.py
 processing.py
 oldgan.py
 rnn.py
+midi_to_csv.py
+no_delta_t.py
