@@ -136,3 +136,6 @@ rnn_csv/
 justdisc/
 instrument_data.py
 justdisc.py
+processing.py
+oldgan.py
+rnn.py
