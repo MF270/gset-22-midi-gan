@@ -59,7 +59,7 @@ class Generator(nn.Module):
 		x = F.relu(self.fc7(x))
 		x = F.relu(self.fc8(x))
 		x = F.relu(self.fc9(x))
-		return (F.sigmoid(self.fc10(x)))
+		return (torch.sigmoid(self.fc10(x)))
 
 class MidiDataset(Dataset):
 	def __init__(self,dir):
