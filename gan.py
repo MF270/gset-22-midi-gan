@@ -101,7 +101,7 @@ def D_train(x):
 	return D_loss.data.item()
 
 def save_as_csv(t):
-	with open("fuckinghelpme.csv","w",newline="") as csv_file:
+	with open("output.csv","w",newline="") as csv_file:
 		writer = csv.writer(csv_file)
 		writer.writerow([t[0][0].tolist()])
 		rest_of_list = t[0][1:]
