@@ -102,13 +102,13 @@ def midify(x):
 				val = round(wsig(1, 1, element))
 			#channel
 			elif column == 1:
-				val = round(wsig(15, 1, element))
+				val = round(wsig(15, 64, element))
 			#pitch, velocity
 			elif column in (2, 3):
-				val = round(wsig(127, 1, element))
+				val = round(wsig(127, 64, element))
 			#time
 			elif column == 4:
-				val = round(wsig(480, 1, element))
+				val = round(wsig(480, 64, element))
 			working.append(val)
 		output.append(working)
 	#print(output)
@@ -132,7 +132,7 @@ def D_train(x):
 	return D_loss.data.item()
 
 def save_as_csv(t):
-	with open(r"C:\Users\sofia\OneDrive\Documents\Python Code\output.csv","w",newline="") as csv_file:
+	with open(r"C:\Users\sofia\OneDrive\Documents\python\gset\output.csv","w",newline="") as csv_file:
 		writer = csv.writer(csv_file)
 		rest_of_list = t[0]
 		out_list = [rest_of_list[i:i+5] for i in range(0, len(rest_of_list), 5)]
@@ -172,7 +172,7 @@ if __name__=="__main__":
 	z_dim = 100
 	midi_dim = 256 * 5
 	batch_size = 64
-	num_epochs = 5
+	num_epochs = 50
 
 	D = Discriminator(midi_dim).to(device)
 	G = Generator(z_dim, midi_dim).to(device)
@@ -208,8 +208,8 @@ if __name__=="__main__":
 		g_loss_mean = torch.mean(Tensor(G_losses))
 		print(f"epoch {epoch}/{num_epochs} loss_d: {(d_loss_mean)} loss_g: {(g_loss_mean)} ")
 		if epoch%5 == 0:
-			torch.save(G.state_dict(), rf"C:\Users\sofia\Downloads\csv{epoch}.pt")
-			torch.save(D.state_dict(), rf"C:\Users\sofia\Downloads\csv{epoch}.pt")
+			torch.save(G.state_dict(), rf"C:\Users\sofia\OneDrive\Documents\python\gset{epoch}.pt")
+			torch.save(D.state_dict(), rf"C:\Users\sofia\OneDrive\Documents\python\gset{epoch}.pt")
 
 		#freeze the disc if it's too good
 		if d_loss_mean < 0.7* g_loss_mean:
