@@ -51,16 +51,16 @@ class Generator(nn.Module):
 		
 	def forward(self, x):
 		#no dropout layers because they could make it a little weaker
-		x = self.fc1(x)
-		x = self.fc2(x)
-		x = self.fc3(x)
-		x = self.fc4(x)
-		x = self.fc5(x)
-		x = self.fc6(x)
-		x = self.fc7(x)
-		x = self.fc8(x)
-		x = self.fc9(x)
-		x = self.fc10(x)
+		x = F.leaky_relu(self.fc1(x))
+		x = F.leaky_relu(self.fc2(x))
+		x = F.leaky_relu(self.fc3(x))
+		x = F.leaky_relu(self.fc4(x))
+		x = F.leaky_relu(self.fc5(x))
+		x = F.leaky_relu(self.fc6(x))
+		x = F.leaky_relu(self.fc7(x))
+		x = F.leaky_relu(self.fc8(x))
+		x = F.leaky_relu(self.fc9(x))
+		x = F.leaky_relu(self.fc10(x))
 		return(midify(x))
 
 class MidiDataset(Dataset):
@@ -131,8 +131,9 @@ def D_train(x):
 	D_optimizer.step()
 	return D_loss.data.item()
 
-def save_as_csv(t):
-	with open(r"C:\Users\sofia\OneDrive\Documents\python\gset\output.csv","w",newline="") as csv_file:
+def save_as_csv(t, epoch_num):
+	print("Saving ..." + str(epoch_num))
+	with open(r"C:\Users\sofia\OneDrive\Documents\Python Code\output" + str(epoch_num) + ".csv","w",newline="") as csv_file:
 		writer = csv.writer(csv_file)
 		rest_of_list = t[0]
 		out_list = [rest_of_list[i:i+5] for i in range(0, len(rest_of_list), 5)]
@@ -142,7 +143,7 @@ def save_as_csv(t):
 			x = l.squeeze().tolist()
 			writer.writerow(x)
 
-def G_train(epochs):
+def G_train(epoch, save):
 	G.zero_grad()
 	z = Tensor(torch.randn(batch_size, z_dim).to(device))
 	y = Tensor(torch.ones(batch_size, 1).to(device))
@@ -152,8 +153,8 @@ def G_train(epochs):
 	# gradient backprop & optimize ONLY G's parameters
 	G_loss.backward()
 	G_optimizer.step()
-	if epochs%5 == 0:
-		save_as_csv(G_output)
+	if save==True and epoch%1 == 0:
+		save_as_csv(G_output, epoch)
 	return G_loss.data.item()
 
 def pretrain_d(real,fake,epochs):
@@ -198,18 +199,20 @@ if __name__=="__main__":
 	pretrain_d(real_loader,fake_loader,disc_extra_epochs)
 	print("training full net")
 	for epoch in range(1, num_epochs+1):
-
 		G_losses, D_losses = [], []
+		save = False
 		for  (x, _) in (real_loader):
 			for i in range(5):
-				G_losses.append(G_train(num_epochs))
+				G_losses.append(G_train(epoch, save))
 			D_losses.append(D_train(x))
+		save = True
+		G_train(epoch, save)
 		d_loss_mean = torch.mean(Tensor(D_losses))
 		g_loss_mean = torch.mean(Tensor(G_losses))
 		print(f"epoch {epoch}/{num_epochs} loss_d: {(d_loss_mean)} loss_g: {(g_loss_mean)} ")
 		if epoch%5 == 0:
-			torch.save(G.state_dict(), rf"C:\Users\sofia\OneDrive\Documents\python\gset{epoch}.pt")
-			torch.save(D.state_dict(), rf"C:\Users\sofia\OneDrive\Documents\python\gset{epoch}.pt")
+			torch.save(G.state_dict(), rf"C:\Users\sofia\Downloads\csv{epoch}.pt")
+			torch.save(D.state_dict(), rf"C:\Users\sofia\Downloads\csv{epoch}.pt")
 
 		#freeze the disc if it's too good
 		if d_loss_mean < 0.7* g_loss_mean:
