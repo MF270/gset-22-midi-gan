@@ -129,6 +129,11 @@ dmypy.json
 .pyre/
 
 csv.zip
+processing.py
+midi_to_csv.py
+instrument_data.py
+models/
+runs/
 gan4.py
 models/
 models2/
