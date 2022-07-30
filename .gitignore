@@ -134,3 +134,15 @@ midi_to_csv.py
 instrument_data.py
 models/
 runs/
+gan4.py
+models/
+models2/
+rnn_csv/
+justdisc/
+instrument_data.py
+justdisc.py
+processing.py
+oldgan.py
+rnn.py
+midi_to_csv.py
+no_delta_t.py
